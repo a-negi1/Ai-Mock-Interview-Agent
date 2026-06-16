@@ -285,7 +285,7 @@ export default function InterviewPage() {
               <>
                 <span style={{ color: "var(--border-strong)" }}>·</span>
                 <span style={{ color: "var(--green)", fontWeight: 600 }}>
-                  avg {(Object.values(scores).reduce((s, sc) => s + sc.overall, 0) / answeredCount).toFixed(1)}/5
+                  avg {(Object.values(scores).reduce((s, sc) => s + Number(sc.overall), 0) / answeredCount).toFixed(1)}/5
                 </span>
               </>
             )}

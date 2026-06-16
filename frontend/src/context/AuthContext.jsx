@@ -3,6 +3,17 @@ import { authAPI } from "../services/api";
 
 const AuthContext = createContext(null);
 
+function decodeJWT(token) {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,13 +21,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      authAPI.me()
-        .then(res => setUser(res.data.user))
-        .catch(() => localStorage.removeItem("token"))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+      const payload = decodeJWT(token);
+      if (payload) {
+        setUser({ id: payload.id, email: payload.email, name: payload.name });
+      } else {
+        localStorage.removeItem("token");
+      }
     }
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
