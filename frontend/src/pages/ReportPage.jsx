@@ -1,0 +1,551 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+} from "recharts";
+import { scoreAPI, interviewAPI } from "../services/api";
+import { useTheme } from "../context/ThemeContext";
+
+function ScoreRing({ score, size = 130 }) {
+  const pct = score / 5;
+  const color = score >= 4 ? "#10b981" : score >= 3 ? "#f59e0b" : "#ef4444";
+  const r = 48;
+  const circ = 2 * Math.PI * r;
+  const dash = pct * circ;
+
+  return (
+    <div style={{ position: "relative", width: size, height: size }}>
+      <svg width={size} height={size} viewBox="0 0 120 120">
+        {}
+        <circle cx="60" cy="60" r={r} fill="none" stroke="var(--surface-3)" strokeWidth="8" />
+        {}
+        <circle
+          cx="60" cy="60" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+          transform="rotate(-90 60 60)"
+          style={{ transition: "stroke-dasharray 1s cubic-bezier(0.16,1,0.3,1)" }}
+        />
+      </svg>
+      {}
+      <div style={{
+        position: "absolute", inset: 0,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+      }}>
+        <span style={{ fontSize: 30, fontWeight: 900, color, lineHeight: 1 }}>
+          {score.toFixed(1)}
+        </span>
+        <span style={{ fontSize: 12, color: "var(--text-3)", fontWeight: 600 }}>/ 5.0</span>
+      </div>
+    </div>
+  );
+}
+
+function StatChip({ label, value, icon }) {
+  return (
+    <div style={{
+      background: "var(--surface-2)",
+      border: "1px solid var(--border)",
+      borderRadius: 12, padding: "14px 18px",
+      display: "flex", flexDirection: "column", gap: 4,
+    }}>
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <span style={{ fontSize: 24, fontWeight: 800, color: "var(--text-1)" }}>{value}</span>
+      <span style={{ fontSize: 12, color: "var(--text-2)", fontWeight: 500 }}>{label}</span>
+    </div>
+  );
+}
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border-strong)",
+      borderRadius: 10, padding: "10px 14px", fontSize: 13,
+      boxShadow: "var(--shadow-md)"
+    }}>
+      <p style={{ fontWeight: 700, color: "var(--text-1)", marginBottom: 4 }}>{label}</p>
+      <p style={{ color: "var(--brand)", fontWeight: 600 }}>
+        Score: {payload[0]?.value?.toFixed(1)}/5
+      </p>
+    </div>
+  );
+}
+
+function SkeletonReport() {
+  return (
+    <div className="page fade-up" style={{ maxWidth: 960 }}>
+      {[180, 280, 200, 260].map((h, i) => (
+        <div key={i} className="skeleton" style={{ height: h, borderRadius: 16, marginBottom: 20 }} />
+      ))}
+    </div>
+  );
+}
+
+export default function ReportPage() {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+
+  const [report, setReport] = useState(null);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const [expandedQ, setExpandedQ] = useState(null);
+
+  useEffect(() => {
+    Promise.all([
+      interviewAPI.getSession(sessionId),
+      scoreAPI.getReport(sessionId).catch(() => null),
+    ]).then(([sessRes, repRes]) => {
+      setSession(sessRes.data);
+      if (repRes) setReport(repRes.data);
+      setLoading(false);
+    }).catch(() => {
+      setError("Failed to load report data.");
+      setLoading(false);
+    });
+  }, [sessionId]);
+
+  const generateReport = async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await scoreAPI.generateReport(sessionId);
+      setReport(res.data);
+    } catch {
+      setError("Failed to generate report. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (loading) return <SkeletonReport />;
+
+  if (error && !session) return (
+    <div style={{
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      height: "60vh", gap: 16
+    }}>
+      <span style={{ fontSize: 48 }}>😕</span>
+      <p style={{ color: "var(--red-text)" }}>{error}</p>
+      <button onClick={() => navigate("/dashboard")} className="btn btn-primary">
+        Back to dashboard
+      </button>
+    </div>
+  );
+
+  const overallScore = session?.overallScore || 0;
+  const scoreColor = overallScore >= 4 ? "var(--green)"
+    : overallScore >= 3 ? "var(--amber)"
+    : "var(--red)";
+
+  
+  const textColor = theme === "dark" ? "#8b95a7" : "#525866";
+  const gridColor = theme === "dark" ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+
+  const radarData = report
+    ? [
+        { subject: "BERT", value: (report.scores.bert / 5) * 100 },
+        { subject: "Keyword", value: (report.scores.keyword / 5) * 100 },
+        { subject: "LLM", value: (report.scores.llm / 5) * 100 },
+        { subject: "Technical", value: (report.scores.technical / 5) * 100 },
+        { subject: "Behavioral", value: (report.scores.behavioral / 5) * 100 },
+        { subject: "ATS", value: report.scores.ats || 0 },
+      ]
+    : [];
+
+  const questionData = report?.questionBreakdown?.map((q, i) => ({
+    name: `Q${i + 1}`,
+    score: q.score,
+    text: q.text,
+    feedback: q.feedback,
+  })) || [];
+
+  const scoreLabel = overallScore >= 4
+    ? "Excellent performance"
+    : overallScore >= 3
+    ? "Good performance"
+    : "Needs improvement";
+
+  const scoreSubtitle = overallScore >= 4
+    ? "You demonstrated strong competency — great work!"
+    : overallScore >= 3
+    ? "Solid foundation. A few areas to refine before the real thing."
+    : "Review the feedback below to build your confidence.";
+
+  return (
+    <div className="page fade-up" style={{ maxWidth: 960 }}>
+
+      {}
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "flex-start", marginBottom: 32, flexWrap: "wrap", gap: 16
+      }}>
+        <div>
+          <p style={{ fontSize: 12, color: "var(--text-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
+            Interview Report
+          </p>
+          <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 6 }}>
+            {session?.jobTitle}
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--text-2)" }}>
+            {new Date(session?.completedAt || session?.createdAt).toLocaleDateString("en-US", {
+              weekday: "long", month: "long", day: "numeric", year: "numeric"
+            })}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="btn btn-secondary btn-sm"
+        >
+          ← Dashboard
+        </button>
+      </div>
+
+      {}
+      <div className="card" style={{ marginBottom: 24, padding: "32px 36px" }}>
+        <div style={{ display: "flex", gap: 36, alignItems: "center", flexWrap: "wrap" }}>
+          <ScoreRing score={overallScore} />
+
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{
+              display: "inline-block",
+              fontSize: 12, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.5px", color: scoreColor,
+              background: overallScore >= 4 ? "var(--green-bg)" : overallScore >= 3 ? "var(--amber-bg)" : "var(--red-bg)",
+              padding: "4px 12px", borderRadius: 999, marginBottom: 10
+            }}>
+              {scoreLabel}
+            </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>
+              Overall Performance
+            </h2>
+            <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.65, marginBottom: 24 }}>
+              {scoreSubtitle}
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 12 }}>
+              <StatChip
+                icon="❓"
+                label="Questions"
+                value={session?.questions?.length || 0}
+              />
+              <StatChip
+                icon="✅"
+                label="Answered"
+                value={session?.questions?.filter(q => q.answer).length || 0}
+              />
+              <StatChip
+                icon="⏱"
+                label="Duration"
+                value={`${Math.floor((session?.totalDuration || 0) / 60)}m`}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {}
+      {!report ? (
+        <div className="card" style={{
+          textAlign: "center", padding: "56px 32px",
+          background: "var(--brand-light)",
+          border: "1px dashed var(--brand)",
+        }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>✨</div>
+          <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 10 }}>
+            AI analysis ready
+          </h3>
+          <p style={{ color: "var(--text-2)", fontSize: 15, lineHeight: 1.65, maxWidth: 480, margin: "0 auto 28px" }}>
+            Generate your detailed performance report with BERTScore analysis, per-question breakdown, and targeted improvement recommendations.
+          </p>
+          {error && (
+            <div className="alert alert-danger fade-in" style={{ maxWidth: 480, margin: "0 auto 20px" }}>
+              ⚠ {error}
+            </div>
+          )}
+          <button
+            onClick={generateReport}
+            disabled={generating}
+            className="btn btn-primary btn-lg"
+            style={{ minWidth: 220 }}
+          >
+            {generating ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{
+                  width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "white", borderRadius: "50%",
+                  animation: "spin 0.7s linear infinite", display: "inline-block"
+                }} />
+                Analysing performance…
+              </span>
+            ) : "Generate full report →"}
+          </button>
+        </div>
+      ) : (
+        <div className="fade-in">
+
+          {}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+            gap: 20, marginBottom: 20
+          }}>
+            {}
+            <div className="card" style={{ padding: "24px" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Score breakdown</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+                  <PolarGrid stroke={gridColor} />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fontSize: 12, fill: textColor, fontWeight: 500 }}
+                  />
+                  <Radar
+                    name="Score"
+                    dataKey="value"
+                    stroke="var(--brand)"
+                    fill="var(--brand)"
+                    fillOpacity={0.18}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {}
+            <div className="card" style={{ padding: "24px" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Per-question performance</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={questionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke={gridColor} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: textColor }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--brand-glow)" }} />
+                  <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                    {questionData.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={
+                          entry.score >= 4 ? "#10b981"
+                            : entry.score >= 3 ? "#f59e0b"
+                            : "#ef4444"
+                        }
+                        fillOpacity={0.85}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 20, marginBottom: 20
+          }}>
+            {}
+            <div className="card" style={{
+              borderTop: "3px solid var(--green)",
+              padding: "24px 28px"
+            }}>
+              <h3 style={{
+                fontSize: 16, fontWeight: 700, marginBottom: 20,
+                display: "flex", alignItems: "center", gap: 8,
+                color: "var(--green-text)"
+              }}>
+                <span>✅</span> Key strengths
+              </h3>
+              <ul style={{ paddingLeft: 0, margin: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+                {report.strengths?.map((s, i) => (
+                  <li key={i} style={{
+                    display: "flex", gap: 10,
+                    fontSize: 14, lineHeight: 1.65, color: "var(--text-1)"
+                  }}>
+                    <span style={{ color: "var(--green)", flexShrink: 0, marginTop: 2 }}>→</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {}
+            <div className="card" style={{
+              borderTop: "3px solid var(--amber)",
+              padding: "24px 28px"
+            }}>
+              <h3 style={{
+                fontSize: 16, fontWeight: 700, marginBottom: 20,
+                display: "flex", alignItems: "center", gap: 8,
+                color: "var(--amber-text)"
+              }}>
+                <span>📈</span> Areas to improve
+              </h3>
+              <ul style={{ paddingLeft: 0, margin: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+                {report.improvements?.map((s, i) => (
+                  <li key={i} style={{
+                    display: "flex", gap: 10,
+                    fontSize: 14, lineHeight: 1.65, color: "var(--text-1)"
+                  }}>
+                    <span style={{ color: "var(--amber)", flexShrink: 0, marginTop: 2 }}>→</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {}
+          <div className="card" style={{ padding: "28px 32px", marginBottom: 20 }}>
+            <h3 style={{
+              fontSize: 17, fontWeight: 700, marginBottom: 20,
+              display: "flex", alignItems: "center", gap: 10
+            }}>
+              <span>💡</span> Actionable recommendations
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {report.recommendations?.map((r, i) => (
+                <div key={i} style={{
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                  padding: "14px 16px",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                }}>
+                  <div style={{
+                    flexShrink: 0, width: 26, height: 26,
+                    background: "var(--brand-light)",
+                    borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: "var(--brand)",
+                  }}>
+                    {i + 1}
+                  </div>
+                  <p style={{ fontSize: 14, lineHeight: 1.65, color: "var(--text-1)", margin: 0 }}>
+                    {r}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {}
+          <div className="card" style={{ padding: "28px 32px" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 24 }}>
+              Question-by-question feedback
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {report.questionBreakdown?.map((q, i) => {
+                const isOpen = expandedQ === i;
+                const qScore = q.score;
+                const qColor = qScore >= 4 ? "var(--green)"
+                  : qScore >= 3 ? "var(--amber)"
+                  : "var(--red)";
+                const qBg = qScore >= 4 ? "var(--green-bg)"
+                  : qScore >= 3 ? "var(--amber-bg)"
+                  : "var(--red-bg)";
+                const qBorder = qScore >= 4 ? "var(--green-border)"
+                  : qScore >= 3 ? "var(--amber-border)"
+                  : "var(--red-border)";
+
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      borderBottom: i < report.questionBreakdown.length - 1
+                        ? "1px solid var(--border)" : "none",
+                      padding: "18px 0",
+                    }}
+                  >
+                    {}
+                    <div
+                      style={{
+                        display: "flex", gap: 16, alignItems: "flex-start",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setExpandedQ(isOpen ? null : i)}
+                    >
+                      {}
+                      <div style={{
+                        flexShrink: 0, width: 32, height: 32, borderRadius: 8,
+                        background: "var(--brand)", color: "white",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 13, fontWeight: 800, marginTop: 2
+                      }}>
+                        Q{i + 1}
+                      </div>
+
+                      {}
+                      <p style={{
+                        flex: 1, fontSize: 15, fontWeight: 600,
+                        lineHeight: 1.5, color: "var(--text-1)", margin: 0
+                      }}>
+                        {q.text}
+                      </p>
+
+                      {}
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 10, flexShrink: 0
+                      }}>
+                        <span style={{
+                          fontSize: 15, fontWeight: 800,
+                          background: qBg, color: qColor,
+                          border: `1px solid ${qBorder}`,
+                          padding: "4px 12px", borderRadius: 999,
+                        }}>
+                          {q.score?.toFixed(1)}/5
+                        </span>
+                        <span style={{ color: "var(--text-3)", fontSize: 16, transition: "transform 0.2s ease", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>
+                          ▾
+                        </span>
+                      </div>
+                    </div>
+
+                    {}
+                    {isOpen && (
+                      <div className="fade-in" style={{ paddingLeft: 48, marginTop: 14 }}>
+                        <p style={{
+                          fontSize: 14, lineHeight: 1.75, color: "var(--text-1)",
+                          background: "var(--surface-2)",
+                          border: "1px solid var(--border)",
+                          borderLeft: `3px solid ${qColor}`,
+                          padding: "14px 18px",
+                          borderRadius: "0 10px 10px 0",
+                          margin: 0
+                        }}>
+                          {q.feedback}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {}
+          <div style={{
+            display: "flex", gap: 14, marginTop: 24, justifyContent: "center", flexWrap: "wrap"
+          }}>
+            <button onClick={() => navigate("/setup")} className="btn btn-primary btn-lg">
+              Practice again →
+            </button>
+            <button onClick={() => navigate("/dashboard")} className="btn btn-secondary btn-lg">
+              Back to dashboard
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
