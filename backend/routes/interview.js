@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { protect } = require("../middleware/auth");
 const { Session, User } = require("../models");
 const { generateQuestions } = require("../services/ai/groq.service");
-const { scoreAnswer } = require("../services/scoring/scoring.service");
+const { scoreAnswer, atsScore } = require("../services/scoring/scoring.service");
 
 
 
@@ -14,6 +14,8 @@ router.post("/start", protect, async (req, res) => {
     
     const rawQuestions = await generateQuestions({ jobTitle, jobDescription, resumeText });
 
+    const atsResult = atsScore(resumeText, jobDescription);
+
     const session = await Session.create({
       userId: req.user._id,
       jobTitle,
@@ -22,6 +24,7 @@ router.post("/start", protect, async (req, res) => {
       questions: rawQuestions,
       status: "active",
       startedAt: new Date(),
+      atsScore: atsResult.score,
     });
 
     res.status(201).json({

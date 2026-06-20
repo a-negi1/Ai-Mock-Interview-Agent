@@ -264,7 +264,7 @@ export default function SetupPage() {
             <label>
               Job description
               <span style={{ color: "var(--text-3)", fontWeight: 400, marginLeft: 6 }}>
-                (optional · recommended for ATS scoring)
+                (optional · enables AI match + keyword ATS scoring)
               </span>
             </label>
             <textarea
@@ -346,7 +346,8 @@ export default function SetupPage() {
                 marginBottom: 16
               }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--green-text)" }}>
-                  ✅ Resume × JD match
+                  ✅ AI Match
+                  <span style={{ fontWeight: 500, opacity: 0.75, marginLeft: 6 }}>(semantic)</span>
                 </h3>
                 <span style={{
                   fontWeight: 800, fontSize: 20, color: "var(--green)",

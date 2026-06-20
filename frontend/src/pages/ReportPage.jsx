@@ -153,14 +153,14 @@ export default function ReportPage() {
 
   const radarData = report
     ? [
-        { subject: "BERT", value: (report.scores.bert / 5) * 100 },
-        { subject: "Keyword", value: (report.scores.keyword / 5) * 100 },
-        { subject: "LLM", value: (report.scores.llm / 5) * 100 },
-        { subject: "Technical", value: (report.scores.technical / 5) * 100 },
-        { subject: "Behavioral", value: (report.scores.behavioral / 5) * 100 },
-        { subject: "ATS", value: report.scores.ats || 0 },
+        { subject: "Technical",     value: (report.scores.technical     / 5) * 100 },
+        { subject: "Behavioral",    value: (report.scores.behavioral    / 5) * 100 },
+        { subject: "Situational",   value: (report.scores.situational   / 5) * 100 },
+        { subject: "Communication", value: (report.scores.communication / 5) * 100 },
       ]
     : [];
+
+  const ats = report?.scores?.ats ?? 0;
 
   const questionData = report?.questionBreakdown?.map((q, i) => ({
     name: `Q${i + 1}`,
@@ -248,6 +248,13 @@ export default function ReportPage() {
                 label="Duration"
                 value={`${Math.floor((session?.totalDuration || 0) / 60)}m`}
               />
+              {ats > 0 && (
+                <StatChip
+                  icon="🎯"
+                  label="Keyword Match (ATS-style)"
+                  value={`${ats}%`}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -303,11 +310,11 @@ export default function ReportPage() {
             <div className="card" style={{ padding: "24px" }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Score breakdown</h3>
               <ResponsiveContainer width="100%" height={280}>
-                <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+                <RadarChart data={radarData} outerRadius="60%" margin={{ top: 10, right: 50, bottom: 10, left: 50 }}>
                   <PolarGrid stroke={gridColor} />
                   <PolarAngleAxis
                     dataKey="subject"
-                    tick={{ fontSize: 12, fill: textColor, fontWeight: 500 }}
+                    tick={{ fontSize: "clamp(10px, 2.5vw, 12px)", fill: textColor, fontWeight: 500 }}
                   />
                   <Radar
                     name="Score"

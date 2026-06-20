@@ -103,15 +103,22 @@ async function scoreAnswer({ question, answer, jobTitle, domainKeywords = [] }) 
 }
 
 function atsScore(resumeText, jobDescription) {
+  if (!jobDescription || !jobDescription.trim()) {
+    return { score: 0, matchedKeywords: [], totalJDKeywords: 0, matchRate: 0 };
+  }
+
   const jdTokens = tokenize(jobDescription);
-  const resumeTokens = new Set(tokenize(resumeText));
+  const resumeTokens = new Set(tokenize(resumeText || ""));
 
   const jdSet = new Set(jdTokens);
+  if (jdSet.size === 0) {
+    return { score: 0, matchedKeywords: [], totalJDKeywords: 0, matchRate: 0 };
+  }
+
   const matched = [...jdSet].filter((t) => resumeTokens.has(t));
   const matchRate = matched.length / jdSet.size;
 
-  
-  const score = Math.round(matchRate * 120); 
+  const score = Math.round(matchRate * 120);
   return {
     score: Math.min(100, score),
     matchedKeywords: matched.slice(0, 20),

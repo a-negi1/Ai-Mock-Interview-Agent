@@ -32,6 +32,7 @@ router.post("/report/:sessionId", protect, async (req, res) => {
       technical: avgByCategory(answeredQs, "technical"),
       behavioral: avgByCategory(answeredQs, "behavioral"),
       situational: avgByCategory(answeredQs, "situational"),
+      communication: avg(answeredQs, "fluency"),
     };
 
     const report = await Report.create({
