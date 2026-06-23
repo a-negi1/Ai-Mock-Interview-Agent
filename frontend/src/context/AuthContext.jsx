@@ -23,7 +23,14 @@ export function AuthProvider({ children }) {
     if (token) {
       const payload = decodeJWT(token);
       if (payload) {
-        setUser({ id: payload.id, email: payload.email, name: payload.name });
+
+        setUser({ id: payload.id, email: payload.email || "", name: payload.name || "" });
+
+        authAPI.me()
+          .then(res => setUser(res.data.user))
+          .catch(() => { /* server unreachable — keep the decoded payload */ })
+          .finally(() => setLoading(false));
+        return;
       } else {
         localStorage.removeItem("token");
       }

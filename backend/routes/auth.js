@@ -41,9 +41,11 @@ router.post("/signup", async (req, res) => {
     }
 
     const user = await User.create({ email, password, name });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
 
     res.status(201).json({
       token,
@@ -68,9 +70,11 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
 
     res.json({
       token,
@@ -81,5 +85,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
+
+router.get("/me", protect, async (req, res) => {
+  res.json({ user: { id: req.user._id, email: req.user.email, name: req.user.name } });
+});
+
 module.exports = router;
-exports.protect = protect;

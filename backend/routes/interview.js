@@ -11,7 +11,7 @@ router.post("/start", protect, async (req, res) => {
     const { jobTitle, jobDescription, resumeText } = req.body;
     if (!jobTitle) return res.status(400).json({ message: "jobTitle is required" });
 
-    
+
     const rawQuestions = await generateQuestions({ jobTitle, jobDescription, resumeText });
 
     const atsResult = atsScore(resumeText, jobDescription);
@@ -43,6 +43,20 @@ router.post("/start", protect, async (req, res) => {
 });
 
 
+
+router.get("/", protect, async (req, res) => {
+  try {
+    const sessions = await Session.find({ userId: req.user._id })
+      .select("jobTitle status overallScore createdAt totalDuration questions")
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(sessions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 router.get("/:sessionId", protect, async (req, res) => {
   try {
     const session = await Session.findOne({ _id: req.params.sessionId, userId: req.user._id });
@@ -64,7 +78,7 @@ router.post("/:sessionId/answer", protect, async (req, res) => {
     const question = session.questions.find((q) => q.id === questionId);
     if (!question) return res.status(404).json({ message: "Question not found" });
 
-    
+
     const scoreResult = await scoreAnswer({
       question: question.text,
       answer,
@@ -78,7 +92,7 @@ router.post("/:sessionId/answer", protect, async (req, res) => {
 
     await session.save();
 
-    
+
     req.io?.to(session._id.toString()).emit("answer-scored", { questionId, score: scoreResult });
 
     res.json({ questionId, score: scoreResult });
@@ -100,7 +114,7 @@ router.post("/:sessionId/transcribe", protect, async (req, res) => {
     const question = session.questions.find((q) => q.id === questionId);
     if (!question) return res.status(404).json({ message: "Question not found" });
 
-    
+
     const scoreResult = await scoreAnswer({
       question: question.text,
       answer: transcript,
@@ -144,7 +158,7 @@ router.post("/:sessionId/end", protect, async (req, res) => {
     session.totalDuration = Math.floor((session.completedAt - session.startedAt) / 1000);
     await session.save();
 
-    
+
     const user = await User.findById(req.user._id);
     const totalSessions = user.interviewCount + 1;
     user.avgScore = Math.round(((user.avgScore * user.interviewCount + overallScore) / totalSessions) * 10) / 10;
@@ -158,19 +172,6 @@ router.post("/:sessionId/end", protect, async (req, res) => {
       totalQuestions: session.questions.length,
       duration: session.totalDuration,
     });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
-router.get("/", protect, async (req, res) => {
-  try {
-    const sessions = await Session.find({ userId: req.user._id })
-      .select("jobTitle status overallScore createdAt totalDuration questions")
-      .sort({ createdAt: -1 })
-      .limit(20);
-    res.json(sessions);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -7,6 +7,14 @@ import InterviewPage from "./pages/InterviewPage";
 import ReportPage from "./pages/ReportPage";
 import { interviewAPI } from "./services/api";
 
+function MeshBackground() {
+  return (
+    <div className="mesh-bg" aria-hidden="true">
+      <div className="mesh-blob-3" />
+    </div>
+  );
+}
+
 function Watermark() {
   const year = new Date().getFullYear();
   return (
@@ -46,81 +54,12 @@ function LoginPage() {
     <div style={{
       minHeight: "100vh",
       display: "flex",
-      background: "var(--bg)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px",
     }}>
-      {}
-      <div style={{
-        display: "none",
-        flex: "0 0 480px",
-        background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #7c3aed 100%)",
-        padding: "60px 48px",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        position: "relative",
-        overflow: "hidden",
-      }} className="login-panel">
-        {}
-        <div style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
-          {[...Array(6)].map((_, i) => (
-            <div key={i} style={{
-              position: "absolute",
-              width: (i + 1) * 120 + "px",
-              height: (i + 1) * 120 + "px",
-              border: "1px solid white",
-              borderRadius: "50%",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-            }} />
-          ))}
-        </div>
-
-        <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 60 }}>
-            <div style={{
-              width: 36, height: 36, background: "rgba(255,255,255,0.2)",
-              borderRadius: 10, display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 18, overflow: "hidden"
-            }}>
-              <img src="/ai-icon.png" alt="InterviewAI" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-            <span style={{ color: "white", fontWeight: 700, fontSize: 16 }}>InterviewAI</span>
-          </div>
-
-          <h1 style={{ color: "white", fontSize: 36, fontWeight: 800, lineHeight: 1.2, marginBottom: 20 }}>
-            Practice smarter.<br />Land your dream role.
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, lineHeight: 1.7 }}>
-            AI-powered mock interviews with real-time scoring, voice recording, and personalized feedback.
-          </p>
-        </div>
-
-        <div style={{ position: "relative" }}>
-          {[
-            { icon: "🧠", label: "Groq LLM scoring with BERTScore analysis" },
-            { icon: "🎙", label: "Browser-native voice recognition" },
-            { icon: "📊", label: "Per-question radar chart breakdown" },
-          ].map((f, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", gap: 14,
-              padding: "14px 18px",
-              background: "rgba(255,255,255,0.1)",
-              borderRadius: 12, marginBottom: 10,
-            }}>
-              <span style={{ fontSize: 20 }}>{f.icon}</span>
-              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: 500 }}>{f.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {}
-      <div style={{
-        flex: 1, display: "flex", alignItems: "center",
-        justifyContent: "center", padding: "24px",
-      }}>
-        <div className="fade-up" style={{ width: "100%", maxWidth: 420 }}>
-          {}
+      <div style={{ width: "100%", maxWidth: 460 }}>
+        <div className="card card-glass-strong fade-up" style={{ padding: "44px 40px", borderRadius: 28 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <div style={{
               width: 52, height: 52, background: "var(--brand)", borderRadius: 16,
@@ -383,18 +322,21 @@ function DashboardPage() {
             bg: "var(--amber-bg)"
           },
         ].map((stat) => (
-          <div key={stat.label} className="card" style={{ padding: "20px 22px" }}>
+          <div key={stat.label} className="card card-hover" style={{ padding: "22px 24px" }}>
             <div style={{
-              width: 38, height: 38, borderRadius: 10, background: stat.bg,
+              width: 40, height: 40, borderRadius: 12,
+              background: stat.bg,
+              border: `1px solid ${stat.color}33`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, marginBottom: 12
+              fontSize: 19, marginBottom: 14,
+              boxShadow: `0 4px 12px ${stat.color}22`,
             }}>
               {stat.icon}
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: stat.color, marginBottom: 4 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: stat.color, marginBottom: 4, lineHeight: 1 }}>
               {stat.value}
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-2)", fontWeight: 500 }}>
+            <div style={{ fontSize: 13, color: "var(--text-2)", fontWeight: 500, marginTop: 4 }}>
               {stat.label}
             </div>
           </div>
@@ -454,7 +396,8 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          <div style={{ minHeight: "100vh" }}>
+          <div style={{ minHeight: "100vh", position: "relative" }}>
+            <MeshBackground />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
