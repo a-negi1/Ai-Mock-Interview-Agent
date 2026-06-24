@@ -1,7 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ThemeProvider, ThemeToggle } from "./context/ThemeContext";
+import { ThemeProvider, ThemeToggle, useTheme } from "./context/ThemeContext";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import SetupPage from "./pages/SetupPage";
 import InterviewPage from "./pages/InterviewPage";
 import ReportPage from "./pages/ReportPage";
@@ -28,12 +29,30 @@ function Watermark() {
 }
 
 function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, googleLogin } = useAuth();
+  const { theme } = useTheme();
   const [mode, setMode] = React.useState("login");
   const [form, setForm] = React.useState({ name: "", email: "", password: "" });
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError("");
+    setLoading(true);
+    try {
+      await googleLogin(credentialResponse.credential);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.message || "Google authentication failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Sign-In failed. Please try again.");
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -141,6 +160,17 @@ function LoginPage() {
           </form>
 
           <div className="divider-text" style={{ margin: "24px 0" }}>or</div>
+
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme={theme === "dark" ? "filled_black" : "outline"}
+              shape="pill"
+              size="large"
+              text={mode === "login" ? "signin_with" : "signup_with"}
+            />
+          </div>
 
           <p style={{ textAlign: "center", fontSize: 14, color: "var(--text-2)" }}>
             {mode === "login" ? "Don't have an account? " : "Already have an account? "}
@@ -393,24 +423,26 @@ function DashboardPage() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <div style={{ minHeight: "100vh", position: "relative" }}>
-            <MeshBackground />
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/setup" element={<ProtectedRoute><SetupPage /></ProtectedRoute>} />
-              <Route path="/interview/:sessionId" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
-              <Route path="/report/:sessionId" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-            </Routes>
-            <ThemeToggle />
-            <Watermark />
-          </div>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <div style={{ minHeight: "100vh", position: "relative" }}>
+              <MeshBackground />
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/setup" element={<ProtectedRoute><SetupPage /></ProtectedRoute>} />
+                <Route path="/interview/:sessionId" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
+                <Route path="/report/:sessionId" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+              </Routes>
+              <ThemeToggle />
+              <Watermark />
+            </div>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }

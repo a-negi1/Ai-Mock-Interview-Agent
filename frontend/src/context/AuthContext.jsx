@@ -52,13 +52,20 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
+  const googleLogin = async (credential) => {
+    const res = await authAPI.google({ credential });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
+    return res.data;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
 const router = require("express").Router();
 const { User } = require("../models");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 const protect = async (req, res, next) => {
   try {
@@ -85,6 +89,55 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
+router.post("/google", async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: "Credential is required" });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload.email_verified) {
+      return res.status(403).json({ message: "Google email not verified" });
+    }
+
+    let user = await User.findOne({
+      $or: [{ googleId: payload.sub }, { email: payload.email }]
+    });
+
+    if (user) {
+      if (!user.googleId) {
+        user.googleId = payload.sub;
+        await user.save();
+      }
+    } else {
+      user = await User.create({
+        name: payload.name,
+        email: payload.email,
+        googleId: payload.sub,
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    res.json({
+      token,
+      user: { id: user._id, email: user.email, name: user.name },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Google login failed", error: err.message });
+  }
+});
 
 
 router.get("/me", protect, async (req, res) => {

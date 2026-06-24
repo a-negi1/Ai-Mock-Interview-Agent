@@ -67,7 +67,7 @@ export default function InterviewPage() {
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState(null);
 
-  // Voice state
+
   const [isRecording, setIsRecording] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
@@ -82,21 +82,21 @@ export default function InterviewPage() {
   const startTimeRef = useRef(null);
   const transcriptBoxRef = useRef(null);
 
-  
+
   useEffect(() => {
     interviewAPI.getSession(sessionId)
       .then(res => { setSession(res.data); setLoading(false); })
       .catch(() => { setError("Session not found"); setLoading(false); });
   }, [sessionId]);
 
-  
+
   useEffect(() => () => {
     recognitionRef.current?.stop();
     clearInterval(timerRef.current);
     window.speechSynthesis?.cancel();
   }, []);
 
-  
+
   useEffect(() => {
     if (transcriptBoxRef.current) {
       transcriptBoxRef.current.scrollTop = transcriptBoxRef.current.scrollHeight;
@@ -109,7 +109,7 @@ export default function InterviewPage() {
   const scored = scores[currentQ?.id];
   const hasTranscript = finalTranscript.trim().length > 10;
 
-  
+
   const playQuestion = useCallback(() => {
     if (!currentQ || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -124,7 +124,7 @@ export default function InterviewPage() {
 
   const stopTTS = () => { window.speechSynthesis?.cancel(); setTtsPlaying(false); };
 
-  
+
   const startRecording = useCallback(() => {
     if (!speechSupported) return setError("Voice not supported in this browser. Use Chrome or Edge, or switch to text mode.");
     setError(null);
@@ -180,7 +180,7 @@ export default function InterviewPage() {
     setError(null);
   };
 
-  // ── Submit voice ──
+
   const submitVoice = useCallback(async () => {
     const transcript = finalTranscript.trim();
     if (!transcript || !currentQ) return;
@@ -200,7 +200,7 @@ export default function InterviewPage() {
     }
   }, [finalTranscript, currentQ, sessionId, recordDuration]);
 
-  // ── Submit text ──
+
   const submitText = async () => {
     if (!textAnswer.trim() || !currentQ) return;
     setSubmitting(true);
@@ -219,7 +219,7 @@ export default function InterviewPage() {
     }
   };
 
-  // ── End interview ──
+
   const endInterview = async () => {
     setEnding(true);
     window.speechSynthesis?.cancel();
@@ -233,7 +233,7 @@ export default function InterviewPage() {
     }
   };
 
-  // ── Navigation between questions ──
+
   const goTo = (idx) => {
     setCurrentIdx(idx);
     resetRecording();
@@ -270,7 +270,7 @@ export default function InterviewPage() {
   return (
     <div className="page fade-up" style={{ maxWidth: 860 }}>
 
-      {}
+      { }
       <div style={{
         display: "flex", justifyContent: "space-between",
         alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12
@@ -300,12 +300,12 @@ export default function InterviewPage() {
         </button>
       </div>
 
-      {}
+      { }
       <div className="progress" style={{ marginBottom: 28 }}>
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {}
+      { }
       {error && (
         <div className="alert alert-danger fade-in" style={{ marginBottom: 20 }}>
           <span>⚠</span>
@@ -317,9 +317,9 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {}
+      { }
       <div className="card" style={{ marginBottom: 20, padding: "28px 32px" }}>
-        {}
+        { }
         <div style={{ display: "flex", gap: 8, marginBottom: 18, alignItems: "center" }}>
           <span style={{
             padding: "4px 12px", borderRadius: 999,
@@ -342,7 +342,7 @@ export default function InterviewPage() {
           )}
         </div>
 
-        {}
+        { }
         <p style={{
           fontSize: 19, fontWeight: 600, lineHeight: 1.6,
           color: "var(--text-1)", marginBottom: 22
@@ -350,7 +350,7 @@ export default function InterviewPage() {
           {currentQ?.text}
         </p>
 
-        {}
+        { }
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={ttsPlaying ? stopTTS : playQuestion}
@@ -367,7 +367,7 @@ export default function InterviewPage() {
         </div>
       </div>
 
-      {}
+      { }
       <div className="mode-toggle" style={{ marginBottom: 20 }}>
         <button
           className={`mode-btn ${mode === MODES.VOICE ? "active" : ""}`}
@@ -383,7 +383,7 @@ export default function InterviewPage() {
         </button>
       </div>
 
-      {}
+      { }
       {mode === MODES.VOICE && (
         <div className="card fade-in" style={{
           marginBottom: 20, padding: "32px",
@@ -391,7 +391,7 @@ export default function InterviewPage() {
           border: "1px solid var(--border)",
         }}>
 
-          {}
+          { }
           {!isRecording && !hasTranscript && (
             <div style={{ textAlign: "center", padding: "8px 0" }}>
               <div style={{
@@ -419,10 +419,10 @@ export default function InterviewPage() {
             </div>
           )}
 
-          {}
+          { }
           {isRecording && (
             <div className="fade-in">
-              {}
+              { }
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 gap: 14, marginBottom: 24
@@ -455,7 +455,7 @@ export default function InterviewPage() {
                     {formatDuration(recordDuration)}
                   </div>
                 </div>
-                {}
+                { }
                 <div className="waveform">
                   {[...Array(5)].map((_, i) => (
                     <span key={i} style={{ animationDelay: `${i * 0.1}s` }} />
@@ -463,7 +463,7 @@ export default function InterviewPage() {
                 </div>
               </div>
 
-              {}
+              { }
               {(finalTranscript || liveTranscript) && (
                 <div
                   ref={transcriptBoxRef}
@@ -491,7 +491,7 @@ export default function InterviewPage() {
             </div>
           )}
 
-          {}
+          { }
           {!isRecording && hasTranscript && (
             <div className="fade-in">
               <div style={{
@@ -552,7 +552,7 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {}
+      { }
       {mode === MODES.TEXT && (
         <div className="fade-in" style={{ marginBottom: 20 }}>
           <textarea
@@ -590,7 +590,7 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {}
+      { }
       {scored && (
         <div
           className="card fade-in"
@@ -600,10 +600,10 @@ export default function InterviewPage() {
             border: "1px solid var(--green-border)",
           }}
         >
-          {}
+          { }
           <ScoreBar score={scored.overall} />
 
-          {}
+          { }
           <p style={{
             fontSize: 14, lineHeight: 1.7,
             color: "var(--green-text)", margin: "14px 0 16px",
@@ -612,7 +612,7 @@ export default function InterviewPage() {
             {scored.feedback}
           </p>
 
-          {}
+          { }
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
             gap: 10,
@@ -637,7 +637,7 @@ export default function InterviewPage() {
             ))}
           </div>
 
-          {}
+          { }
           {scored.improvements?.length > 0 && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--green-border)" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "var(--green-text)", marginBottom: 6, opacity: 0.8 }}>
@@ -653,7 +653,7 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {}
+      { }
       <div style={{
         display: "flex", gap: 12,
         borderTop: "1px solid var(--border)", paddingTop: 20
@@ -667,7 +667,7 @@ export default function InterviewPage() {
           ← Previous
         </button>
 
-        {}
+        { }
         <div style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "0 8px", flexWrap: "wrap", justifyContent: "center"

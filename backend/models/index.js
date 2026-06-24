@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: { type: String, required: function() { return !this.googleId; }, minlength: 6 },
+    googleId: { type: String, unique: true, sparse: true },
     role: { type: String, default: "user" },
     interviewCount: { type: Number, default: 0 },
     avgScore: { type: Number, default: 0 },
@@ -15,12 +16,13 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 userSchema.methods.comparePassword = async function (candidate) {
+  if (!this.password) return false;
   return bcrypt.compare(candidate, this.password);
 };
 
