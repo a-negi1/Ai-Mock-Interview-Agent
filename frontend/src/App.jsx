@@ -213,8 +213,8 @@ function SessionCard({ session, onView }) {
   const score = session.overallScore;
   const scoreColor = !score ? "var(--text-3)"
     : score >= 4 ? "var(--green)"
-    : score >= 3 ? "var(--amber)"
-    : "var(--red)";
+      : score >= 3 ? "var(--amber)"
+        : "var(--red)";
 
   return (
     <div
@@ -224,7 +224,7 @@ function SessionCard({ session, onView }) {
         gap: 20, padding: "18px 24px", cursor: "default"
       }}
     >
-      {}
+      { }
       <div style={{
         flexShrink: 0, width: 52, height: 52, borderRadius: "50%",
         border: `2.5px solid ${scoreColor}`,
@@ -242,7 +242,7 @@ function SessionCard({ session, onView }) {
         ) : <span style={{ fontSize: 18, color: "var(--text-3)" }}>—</span>}
       </div>
 
-      {}
+      { }
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: "var(--text-1)" }}>
           {session.jobTitle}
@@ -262,10 +262,10 @@ function SessionCard({ session, onView }) {
         </div>
       </div>
 
-      {}
+      { }
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
         <span className={`badge ${session.status === "completed" ? "badge-green" : "badge-amber"}`}>
-          {session.status === "completed" ? "Completed" : "In progress"}
+          {session.status === "completed" ? "Completed" : "Incomplete"}
         </span>
         {session.status === "completed" && (
           <button onClick={onView} className="btn btn-secondary btn-sm">
@@ -286,7 +286,7 @@ function DashboardPage() {
   React.useEffect(() => {
     interviewAPI.listSessions()
       .then(r => setSessions(r.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -297,7 +297,7 @@ function DashboardPage() {
 
   return (
     <div className="page fade-up">
-      {}
+      { }
       <div style={{
         display: "flex", justifyContent: "space-between",
         alignItems: "flex-start", marginBottom: 36, flexWrap: "wrap", gap: 16
@@ -323,7 +323,7 @@ function DashboardPage() {
         </div>
       </div>
 
-      {}
+      { }
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
@@ -373,7 +373,7 @@ function DashboardPage() {
         ))}
       </div>
 
-      {}
+      { }
       <div style={{
         display: "flex", justifyContent: "space-between",
         alignItems: "center", marginBottom: 16
